@@ -1,17 +1,26 @@
 from __future__ import annotations
+
+import io
+from typing import TYPE_CHECKING
+
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
-from ..models import GenerateRequest
+
+if TYPE_CHECKING:
+    from ..models import GenerateRequest
+
 from ..renderer import generate_banner
 
 app = FastAPI(title="BannerForge")
 
-@app.get("/health")
-def health():
+
+@app.get("/health")  # type: ignore[misc]
+def health() -> dict[str, bool]:
     return {"ok": True}
 
-@app.post("/api/generate")
-def api_generate(payload: GenerateRequest):
+
+@app.post("/api/generate")  # type: ignore[misc]
+def api_generate(payload: GenerateRequest) -> Response:
     try:
         w, h = _parse_size(payload.size)
         img = generate_banner(
@@ -33,8 +42,8 @@ def api_generate(payload: GenerateRequest):
             palette_from=payload.palette_from,
         )
     except Exception as e:
-        raise HTTPException(400, str(e))
-    import io
+        raise HTTPException(400, str(e)) from e
+
     buf = io.BytesIO()
     img.convert("RGB").save(buf, format="PNG", optimize=True)
     return Response(content=buf.getvalue(), media_type="image/png")
